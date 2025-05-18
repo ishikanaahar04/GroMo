@@ -14,18 +14,41 @@ def clean_message(message):
     # Replace non-breaking spaces with normal spaces
     message = message.replace('\u00A0', ' ')
 
+    # Normalize line breaks
     lines = message.splitlines()
     cleaned_lines = []
-    for line in lines:
+    for i, line in enumerate(lines):
         line = re.sub(r'[ \t]+', ' ', line)
         line = re.sub(r'\s+([.,!?])', r'\1', line)
         line = re.sub(r'\s+([📈📊📱📉📌🔒💸🙏])', r'\1', line)
         line = line.strip()
-        if line:
+
+        if line.startswith("-"):
+            # Ensure a blank line before first bullet point
+            if cleaned_lines and cleaned_lines[-1] != "":
+                cleaned_lines.append("")
             cleaned_lines.append(line)
-    cleaned_text = '\n'.join(cleaned_lines)
-    cleaned_text = re.sub(r'\n{2,}', '\n\n', cleaned_text)
-    return cleaned_text.strip()
+        else:
+            cleaned_lines.append(line)
+
+    # Rebuild cleaned message
+    cleaned_text = []
+    prev_line = ""
+    for line in cleaned_lines:
+        if line == "" and prev_line == "":
+            continue
+        cleaned_text.append(line)
+        prev_line = line
+
+    final_text = "\n".join(cleaned_text)
+
+    # Ensure one blank line before GP name (ends with comma)
+    final_text = re.sub(r"(?<!\n)\n([^\n]+,)\n(GroMo Team)", r"\n\n\1\n\2", final_text)
+
+    # Ensure exactly one blank line before Apply Now
+    final_text = re.sub(r"\n{2,}Apply Now", r"\n\nApply Now", final_text)
+
+    return final_text.strip()
 
 def generate_message(name, profession, interest, service, language, gp_name):
     model = "mistral-large-latest"
@@ -50,14 +73,16 @@ def generate_message(name, profession, interest, service, language, gp_name):
         "4. Mention GroMo APP 📱 for applying\n"
         "5. Highlight GroMo's ease and trust\n"
         "6. Offer help politely: 'मैं आपको पूरी प्रोसेस समझा सकती हूँ।'\n"
-        f"7. End with '{gp_name}, GroMo Team'\n"
+        f"7. End with '{gp_name}, and in the next line GroMo Team'\n"
         "8. Use 2–4 emojis meaningfully spread out\n\n"
+        "9. Use gender words properly based on the GP name don't make mistake while generating message."
+        "10.Message should be short and sweet"
 
         "📌 Style Rules:\n"
         "- Do not translate words like APP, Credit Card, Loan\n"
         "- Do not mix scripts — use only the selected language\n"
         "- Do not add extra line breaks or large spaces between sentences or words\n"
-        f"- Always include the GP name correctly at the end: '{gp_name}, and in the next line GroMo Team'\n"
+        f"- Always include the GP name correctly at the end: '{gp_name}, and in the next line GroMo Partners'\n"
     )
 
     prompt = unicodedata.normalize('NFKC', prompt)
@@ -69,7 +94,9 @@ def generate_message(name, profession, interest, service, language, gp_name):
             messages=[{"role": "user", "content": prompt}]
         )
         message = completion.choices[0].message.content.strip()
-        return clean_message(message)
+        message = clean_message(message)
+        message += "\n\nApply Now: sales.gromo.in/hd/4idZikMK7k"
+        return message
     except Exception as e:
         return f"❌ Error generating message: {e}"
 
