@@ -82,7 +82,7 @@ def generate_message(name, profession, interest, service, language, gp_name):
         "- Do not translate words like APP, Credit Card, Loan\n"
         "- Do not mix scripts — use only the selected language\n"
         "- Do not add extra line breaks or large spaces between sentences or words\n"
-        f"- Always include the GP name correctly at the end: '{gp_name}, and in the next line GroMo Partners'\n"
+        f"- Always include the GP name correctly at the end: '{gp_name}, and in the next line GroMo Partner'\n"
     )
 
     prompt = unicodedata.normalize('NFKC', prompt)
